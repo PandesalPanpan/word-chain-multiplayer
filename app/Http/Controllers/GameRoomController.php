@@ -15,4 +15,11 @@ class GameRoomController extends Controller
 
         return view('game-rooms.index', compact('gameRooms'));
     }
+
+    public function show(GameRoom $gameRoom)
+    {
+        $gameRoom->load('wordMoves');
+
+        return view('game-rooms.show', compact('gameRoom'));
+    }
 }
