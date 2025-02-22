@@ -11,6 +11,8 @@ return new class extends Migration {
             $table->id();
             $table->string('name');
             $table->boolean('is_active')->default(true);
+            $table->boolean('in_progress')->default(false);
+            $table->timestamp('in_progress_at')->nullable();
             $table->timestamps();
         });
     }

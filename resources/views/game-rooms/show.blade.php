@@ -41,6 +41,7 @@
             let userTyping = [];
 
             function updatePlayersList() {
+                console.log(channel.members);
                 playersList.innerHTML = usersHere.map(user => `
                 <x-user-online-card>
                     ${user.name}
@@ -88,13 +89,22 @@
                 .joining((user) => {
                     if (!usersHere.find(u => u.id === user.id)) {
                         usersHere.push(user);
+                        updatePlayersList();
                     }
-                    updatePlayersList();
                 })
                 .leaving((user) => {
                     usersHere = usersHere.filter(u => u.id !== user.id);
                     userTyping = userTyping.filter(u => u.user.id !== user.id);
                     updatePlayersList();
+
+                    // Send request to remove user from game room
+                    // axios.post(`/game-rooms/${gameRoom.id}/leave`, {
+                    //     user_id: user.id
+                    // }).catch(error => console.error('Error updating user:', error));
+
+                    if (Object.keys(channel.members.users).length === 0) {
+                        axios.post('/log')
+                    }
                 })
                 .listenForWhisper('typing', (event) => {
                     const inputField = document.getElementById(`input-${event.user.id}`);
@@ -122,6 +132,12 @@
                         }
                     }
                 });
+            window.addEventListener('beforeunload', () => {
+                console.log('unload is triggered');
+                axios.post(`/log`, {
+                    user_id: currentUserId
+                }).catch(error => console.error('Error updating user:', error));
+            });
         }
     </script>
 </x-app-layout>

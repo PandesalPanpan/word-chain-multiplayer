@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\GameRoom;
+use App\Models\User;
+use Illuminate\Http\Request;
 
 class GameRoomController extends Controller
 {
@@ -20,6 +22,22 @@ class GameRoomController extends Controller
     {
         $gameRoom->load('wordMoves');
 
+        // Associate the authenticated user with the game room
+        auth()->user()->gameRoom()->associate($gameRoom)->save();
+
         return view('game-rooms.show', compact('gameRoom'));
+    }
+
+    public function leave(Request $request, GameRoom $gameRoom)
+    {
+        // Check if user belongs to the room
+        if ($request->user()->gameRoom->isNot($gameRoom)) {
+            // do nothing
+            return redirect()->route('game-rooms.index');
+        }
+
+        $request->user()->gameRoom()->dissociate()->save();
+
+        return redirect()->route('game-rooms.index');
     }
 }

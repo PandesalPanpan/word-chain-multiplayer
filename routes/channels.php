@@ -1,11 +1,21 @@
 <?php
 
 use App\Models\GameRoom;
-use App\Models\User;
 use Illuminate\Support\Facades\Broadcast;
 
-Broadcast::channel('game-rooms.{gameRoomId}', function ($user, $id) {
-    return $user->only('id', 'name');
+Broadcast::channel('game-rooms', function () {
+    // Allow users if authenticated
+    return true;
 });
 
+Broadcast::channel('game-rooms.{gameRoomId}', function ($user, $id) {
+
+    $gameRoom = GameRoom::find($id);
+
+    if ($gameRoom->users() && $gameRoom->users()->where('id', $user->id)->exists()) {
+        return $user->only('id', 'name');
+    }
+
+    return false;
+});
 
