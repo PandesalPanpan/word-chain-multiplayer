@@ -11,7 +11,7 @@ class GameRoomController extends Controller
     public function index()
     {
         $gameRooms = GameRoom::where('is_active', true)
-            ->withCount('wordMoves')
+            ->withCount('users')
             ->latest()
             ->get();
 
