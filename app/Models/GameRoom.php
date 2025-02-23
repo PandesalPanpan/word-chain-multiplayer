@@ -19,6 +19,7 @@ class GameRoom extends Model
         'name',
         'is_active',
         'in_progress',
+        'in_progress_at',
     ];
 
     protected static function booted(): void
@@ -26,11 +27,6 @@ class GameRoom extends Model
         static::created(queueable(function ($gameRoom) {
             logger('GameRoom created: '.$gameRoom);
             event(new GameRoomUpdatedEvent('created', $gameRoom));
-        }));
-
-        static::deleted(queueable(function ($gameRoom) {
-            logger('GameRoom deleted: '.$gameRoom);
-            event(new GameRoomUpdatedEvent('deleted', $gameRoom));
         }));
 
         static::updated(queueable(function ($gameRoom) {
