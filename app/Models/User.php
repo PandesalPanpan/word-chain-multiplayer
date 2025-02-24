@@ -3,10 +3,13 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Events\GameRoomUpdatedEvent;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+
+use function Illuminate\Events\queueable;
 
 class User extends Authenticatable
 {
@@ -22,6 +25,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'game_room_id',
     ];
 
     /**
@@ -45,6 +49,28 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::updated(queueable(function ($user) {
+            if ($user->isDirty('game_room_id')) {
+                if ($user->game_room_id) {
+                    // Load the game room with user count when a user joins
+                    $gameRoom = GameRoom::where('id', $user->game_room_id)
+                        ->withCount('users')
+                        ->first();
+
+                } else {
+                    // When user leaves, load and broadcast the old game room
+                    $gameRoom = GameRoom::where('id', $user->getOriginal('game_room_id'))
+                        ->withCount('users')
+                        ->first();
+
+                }
+                event(new GameRoomUpdatedEvent('updated', $gameRoom));
+            }
+        }));
     }
 
     public function gameRoom(): belongsTo
