@@ -8,41 +8,37 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+// Grab all the game rooms that are not in progress and check last progress time
+// If the game room has been inactive for 30 minutes, delete the game room
+// and disassociate the user from the game room
 \Illuminate\Support\Facades\Schedule::call(function () {
-    // Grab all the game rooms that are not in progress and check last progress time
     $gameRooms = GameRoom::where('in_progress', false)
         ->with('users')
-        ->where('created_at', '<=', now()->subMinutes(30))
-        ->orWhere('in_progress_at', '<=', now()->subMinutes(30))
+        ->where('updated_at', '<=', now()->subMinutes(30))
         ->get();
 
     Log::info('Game rooms:');
     Log::info('');
     Log::info($gameRooms);
 
-    // Delete the game room if it has only one user, and it has not been in progress for 30 minutes
     foreach ($gameRooms as $gameRoom) {
-        // log game room if they have in_progress_at or created_at only
-        if ($gameRoom->in_progress_at && ! $gameRoom->created_at) {
-            // This should not happen
-            \Log::info('Game room '.$gameRoom->id.' has in_progress_at only');
-        } elseif ($gameRoom->created_at && ! $gameRoom->in_progress_at) {
-            \Log::info('Game room '.$gameRoom->id.' has created_at only');
+        // Write a truth table, All data will always be not in progress
+        // 1. Game room is inactive and not in progress -> Delete the game room
+        if (! $gameRoom->is_active) {
+            $gameRoom->users()->update(['game_room_id' => null]);
+            $gameRoom->delete();
+        }
+        // ! This will not occur
+        // 2. Game room is inactive and in progress -> Do nothing
 
-            // Set the gameRoom to inactive and disassociate the user
+        // 3. Game room is active and not in progress for 30 minutes -> Update to be inactive first
+        if ($gameRoom->is_active) {
+            // Remove users from the game room
             $gameRoom->users()->update(['game_room_id' => null]);
             $gameRoom->update(['is_active' => false]);
-
-        } else {
-            // Check if in_progress_at is past 30 minutes
-            if ($gameRoom->in_progress_at->lte(now()->subMinutes(30))) {
-                // Dissociate the user from the game room
-                $gameRoom->users()->update(['game_room_id' => null]);
-                // Delete the game room
-                $gameRoom->update(['is_active' => false]);
-            }
-
-            \Log::info('Game room '.$gameRoom->id.' has both in_progress_at and created_at');
         }
+
+        // ! This will not occur
+        // 4. Game room is active and in progress -> Do Nothing
     }
 })->everyMinute();

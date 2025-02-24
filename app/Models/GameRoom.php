@@ -19,7 +19,6 @@ class GameRoom extends Model
         'name',
         'is_active',
         'in_progress',
-        'in_progress_at',
     ];
 
     protected static function booted(): void
