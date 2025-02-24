@@ -68,7 +68,8 @@ class User extends Authenticatable
                         ->first();
 
                 }
-                event(new GameRoomUpdatedEvent('updated', $gameRoom));
+
+                event(new GameRoomUpdatedEvent('updated', $gameRoom->toArray()));
             }
         }));
     }
