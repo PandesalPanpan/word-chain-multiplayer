@@ -39,4 +39,16 @@ class GameRoomController extends Controller
 
         return redirect()->route('game-rooms.index');
     }
+
+    public function create(Request $request)
+    {
+        // Check if user has a game room
+        if ($request->user()->gameRoom) {
+            $request->user()->gameRoom()->dissociate()->save();
+        }
+
+        // Route to create page
+
+        return view('game-rooms.create');
+    }
 }

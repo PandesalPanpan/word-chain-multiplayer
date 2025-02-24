@@ -19,6 +19,8 @@ Route::post('/log', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/game-rooms', [GameRoomController::class, 'index'])->name('game-rooms.index');
+    Route::get('/game-rooms/create', [GameRoomController::class, 'create'])->name('game-rooms.create');
+    // Make wild cards routes are the last routes
     Route::get('/game-rooms/{gameRoom}', [GameRoomController::class, 'show'])->name('game-rooms.show');
     Route::post('/game-rooms/{gameRoom}/leave', [GameRoomController::class, 'leave'])->name('game-rooms.leave');
 //    Route::post('/game-rooms', [GameRoomController::class, 'store'])->name('game-rooms.store');

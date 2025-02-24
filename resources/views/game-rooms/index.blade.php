@@ -11,10 +11,12 @@
                         <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
                             Available Rooms
                         </h3>
-                        <button
-                            class="px-4 py-2 text-sm font-medium text-white transition-colors bg-indigo-600 rounded-md hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
-                            Create Room
-                        </button>
+                        <a href="{{ route('game-rooms.create') }}">
+                            <button
+                                class="px-4 py-2 text-sm font-medium text-white transition-colors bg-indigo-600 rounded-md hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                                Create Room
+                            </button>
+                        </a>
                     </div>
 
                     <div class="grid gap-6 md:grid-cols-3"
