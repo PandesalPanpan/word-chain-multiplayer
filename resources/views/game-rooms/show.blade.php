@@ -134,7 +134,7 @@
                 });
             window.addEventListener('beforeunload', () => {
                 console.log('unload is triggered');
-                axios.post(`/log`, {
+                axios.post(`/game-rooms/${gameRoom.id}/leave`, {
                     user_id: currentUserId
                 }).catch(error => console.error('Error updating user:', error));
             });

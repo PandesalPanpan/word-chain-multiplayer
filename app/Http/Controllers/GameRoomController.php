@@ -33,10 +33,9 @@ class GameRoomController extends Controller
         // Check if user belongs to the room
         if ($request->user()->gameRoom->isNot($gameRoom)) {
             // do nothing
-            return redirect()->route('game-rooms.index');
+        } else {
+            $request->user()->gameRoom()->dissociate()->save();
         }
-
-        $request->user()->gameRoom()->dissociate()->save();
 
         return redirect()->route('game-rooms.index');
     }
