@@ -2,7 +2,6 @@
 
 namespace App\Events;
 
-use App\Models\GameRoom;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
@@ -15,7 +14,7 @@ class GameRoomUpdatedEvent implements ShouldBroadcast
 
     public function __construct(
         public string $action,
-        public ?GameRoom $gameRoom = null
+        public $gameRoom = null
     ) {}
 
     public function broadcastOn(): array
