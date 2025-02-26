@@ -3,25 +3,40 @@
         Create a Room
     </x-header-slot>
 
-    <div class="py-12">
-        <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-            <div class="overflow-hidden bg-white shadow-sm dark:bg-gray-800 sm:rounded-lg">
-                <div class="p-6 bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-                    <div class="flex justify-between mb-6">
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
-                            Room Setup
-                        </h3>
-                        <button
-                            class="px-4 py-2 text-sm font-medium text-white transition-colors bg-indigo-600 rounded-md hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
-                            Create Room
-                        </button>
-                    </div>
+    <x-content-card>
+        <div class="flex justify-between mb-6">
+            <x-content-card-name>
+                Room Setup
 
-                    <div class="grid gap-6 md:grid-cols-3">
-
-                    </div>
+            </x-content-card-name>
+            <a href="{{ route('game-rooms.index') }}">
+                <x-button color="red">
+                    Back
+                </x-button>
+            </a>
+        </div>
+        <form action="{{ route('game-rooms.store') }}" method="POST">
+            @csrf
+            <div class="space-y-4">
+                <div>
+                    <x-form-label for="name">
+                        Room Name
+                    </x-form-label>
+                    <x-form-input id="name" name="name" type="text" class="w-full" required autofocus />
+                    <x-form-error name="name"/>
+                </div>
+{{--                <div>--}}
+{{--                    <x-label for="max_players">--}}
+{{--                        Max Players--}}
+{{--                    </x-label>--}}
+{{--                    <x-input id="max_players" name="max_players" type="number" class="w-full" required />--}}
+{{--                </div>--}}
+                <div>
+                    <x-button type="submit" class="mt-6">
+                        Create Room
+                    </x-button>
                 </div>
             </div>
-        </div>
-    </div>
+        </form>
+    </x-content-card>
 </x-app-layout>
