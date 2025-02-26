@@ -60,6 +60,7 @@ class GameRoomController extends Controller
         ]);
 
         $gameRoom = GameRoom::create([
+            'host_id' => auth()->id(),
             'name' => $request->name,
         ]);
 
