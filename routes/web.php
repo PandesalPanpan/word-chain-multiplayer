@@ -17,7 +17,7 @@ Route::post('/log', function () {
     logger('Axios Post worked');
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'nocache'])->group(function () {
     Route::get('/game-rooms', [GameRoomController::class, 'index'])->name('game-rooms.index');
     Route::post('/game-rooms', [GameRoomController::class, 'store'])->name('game-rooms.store');
     Route::get('/game-rooms/create', [GameRoomController::class, 'create'])->name('game-rooms.create');
