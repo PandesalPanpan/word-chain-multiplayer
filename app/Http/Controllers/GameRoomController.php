@@ -51,4 +51,21 @@ class GameRoomController extends Controller
 
         return view('game-rooms.create');
     }
+
+    public function store(Request $request)
+    {
+        // Validate request with a short name
+        $request->validate([
+            'name' => 'required|string|max:16',
+        ]);
+
+        $gameRoom = GameRoom::create([
+            'name' => $request->name,
+        ]);
+
+        // Associate the authenticated user with the game room
+        auth()->user()->gameRoom()->associate($gameRoom)->save();
+
+        return redirect()->route('game-rooms.show', $gameRoom);
+    }
 }
