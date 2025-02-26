@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Events\GameRoomUpdatedEvent;
+use App\Events\GameRoomLobbyEvent;
 use Illuminate\Database\Eloquent\BroadcastsEvents;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -31,7 +31,7 @@ class GameRoom extends Model
 
             // Pass the game room with the users count
             $gameRoom->loadCount('users');
-            event(new GameRoomUpdatedEvent('created', $gameRoom->toArray()));
+            event(new GameRoomLobbyEvent('created', $gameRoom->toArray()));
         }));
 
         static::updated(queueable(function ($gameRoom) {
@@ -51,7 +51,7 @@ class GameRoom extends Model
             // 2. Old: True -> New: False = Broadcast without user count and also remove users from the game room
             if ($old_is_active === true && $current_is_active === false) {
                 $gameRoom->users()->update(['game_room_id' => null]);
-                event(new GameRoomUpdatedEvent('updated', $gameRoom->toArray()));
+                event(new GameRoomLobbyEvent('updated', $gameRoom->toArray()));
 
                 return;
             }
@@ -59,7 +59,7 @@ class GameRoom extends Model
             // 3. Old: False -> New: True = Broadcast
             // 4. Old: True -> New: True = Broadcast
             $gameRoom->loadCount('users');
-            event(new GameRoomUpdatedEvent('updated', $gameRoom->toArray()));
+            event(new GameRoomLobbyEvent('updated', $gameRoom->toArray()));
         }));
     }
 

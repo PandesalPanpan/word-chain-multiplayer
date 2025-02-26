@@ -3,7 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Events\GameRoomUpdatedEvent;
+use App\Events\GameRoomLobbyEvent;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -69,7 +69,7 @@ class User extends Authenticatable
 
                 }
 
-                event(new GameRoomUpdatedEvent('updated', $gameRoom->toArray()));
+                event(new GameRoomLobbyEvent('updated', $gameRoom->toArray()));
             }
         }));
     }
