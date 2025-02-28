@@ -41,12 +41,11 @@
             let userTyping = [];
 
             function updatePlayersList() {
-                console.log(channel.members);
                 playersList.innerHTML = usersHere.map(user => `
-                <x-user-online-card>
-                    ${user.name}
+                <x-user-online-card class="${user.id === {{ $gameRoom->host_id }} ? 'border-2 border-yellow-500 dark:border-yellow-400' : ''}">
+                    ${user.name} ${user.id === {{ $gameRoom->host_id }} ? '👑' : ''}
                 </x-user-online-card>
-            `).join('');
+                    `).join('');
 
                 playerInputs.innerHTML = usersHere.map(user => `
                 <div class="space-y-2">
@@ -61,7 +60,7 @@
                         placeholder="${user.id === currentUserId ? 'Type your word...' : 'Waiting for input...'}"
                     >
                 </div>
-            `).join('');
+                `).join('');
 
                 // Add event listeners for the current user's input
                 const currentUserInput = document.getElementById(`input-${currentUserId}`);
@@ -85,6 +84,7 @@
                 .here((users) => {
                     usersHere = users;
                     updatePlayersList();
+
                 })
                 .joining((user) => {
                     if (!usersHere.find(u => u.id === user.id)) {
@@ -96,15 +96,6 @@
                     usersHere = usersHere.filter(u => u.id !== user.id);
                     userTyping = userTyping.filter(u => u.user.id !== user.id);
                     updatePlayersList();
-
-                    // Send request to remove user from game room
-                    // axios.post(`/game-rooms/${gameRoom.id}/leave`, {
-                    //     user_id: user.id
-                    // }).catch(error => console.error('Error updating user:', error));
-
-                    if (Object.keys(channel.members.users).length === 0) {
-                        axios.post('/log')
-                    }
                 })
                 .listenForWhisper('typing', (event) => {
                     const inputField = document.getElementById(`input-${event.user.id}`);

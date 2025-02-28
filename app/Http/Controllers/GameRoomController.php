@@ -5,22 +5,35 @@ namespace App\Http\Controllers;
 use App\Models\GameRoom;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class GameRoomController extends Controller
 {
     public function index()
     {
-        $gameRooms = GameRoom::where('is_active', true)
+        return view('game-rooms.index');
+    }
+
+    public function getActiveRooms()
+    {
+        logger('getActiveRooms called');
+
+        $gameRoom = GameRoom::where('is_active', true)
             ->withCount('users')
             ->latest()
             ->get();
 
-        return view('game-rooms.index', compact('gameRooms'));
+        return response()->json($gameRoom);
     }
 
     public function show(GameRoom $gameRoom)
     {
         $gameRoom->load('wordMoves');
+
+        // Check if a room belongs to a user, if not, associate the user with the room
+        if ((bool) $gameRoom->host_id === false) {
+            $gameRoom->update(['host_id' => auth()->id()]);
+        }
 
         // Associate the authenticated user with the game room
         auth()->user()->gameRoom()->associate($gameRoom)->save();
@@ -30,11 +43,46 @@ class GameRoomController extends Controller
 
     public function leave(Request $request, GameRoom $gameRoom)
     {
-        // Check if user belongs to the room
-        if ($request->user()->gameRoom->isNot($gameRoom)) {
-            // do nothing
-        } else {
-            $request->user()->gameRoom()->dissociate()->save();
+        logger('-=-LEAVE game room called-=-');
+        $case = match (true) {
+            ! $request->user()->gameRoom->is($gameRoom) => 1, // User not in room
+            $gameRoom->host_id === $request->user()->id => 2, // User is host
+            $request->user()->gameRoom->is($gameRoom) => 3,   // User in room
+            $gameRoom->users->count() === 0 => 4,             // Room has no users
+            default => 0
+        };
+
+        switch ($case) {
+            case 1: // User not in room
+                return redirect()->route('game-rooms.index');
+
+            case 2: // User is host
+                // Check if there are other users in the room
+                if ($gameRoom->users->count() > 1) {
+                    $gameRoom->update(['host_id' => $gameRoom->users->first()->id]);
+                } else {
+                    try {
+                        DB::transaction(function () use ($gameRoom, $request) {
+                            $request->user()->withoutEvents(function () use ($request) {
+                                $request->user()->gameRoom()->dissociate()->save();
+                            });
+                            $gameRoom->update(['host_id' => null, 'is_active' => false]);
+                        });
+                    } catch (\Throwable $e) {
+                        report($e);
+
+                        return redirect()->route('game-rooms.index');
+                    }
+                }
+                break;
+
+            case 3: // User in room
+                $request->user()->gameRoom()->dissociate()->save();
+                break;
+
+            case 4: // Room has no users
+                $gameRoom->update(['is_active' => false]);
+                break;
         }
 
         return redirect()->route('game-rooms.index');

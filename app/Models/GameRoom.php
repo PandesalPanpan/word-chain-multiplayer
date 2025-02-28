@@ -26,6 +26,7 @@ class GameRoom extends Model
     protected static function booted(): void
     {
         static::created(queueable(function ($gameRoom) {
+            logger('Game room created booted called');
             // If the game room is inactive no need to broadcast
             if (! $gameRoom->is_active) {
                 return;
@@ -37,31 +38,34 @@ class GameRoom extends Model
         }));
 
         static::updated(queueable(function ($gameRoom) {
+            $gameRoom->loadCount('users');
+            $gameRoomArray = $gameRoom->only([
+                'id',
+                'host_id',
+                'name',
+                'is_active',
+                'in_progress',
+                'created_at',
+                'updated_at',
+                'users_count',
+            ]);
 
-            // Get the old attribute
+            logger('Game room updated booted called with: '.json_encode($gameRoomArray));
+
             $old_is_active = $gameRoom->getOriginal('is_active');
-
-            // Get the current attribute
             $current_is_active = $gameRoom->is_active;
 
-            // What are the possibilities
-            // 1. Old: False -> New: False = No need to broadcast
             if ($old_is_active === false && $current_is_active === false) {
                 return;
             }
 
-            // 2. Old: True -> New: False = Broadcast without user count and also remove users from the game room
             if ($old_is_active === true && $current_is_active === false) {
-                $gameRoom->users()->update(['game_room_id' => null]);
-                event(new GameRoomLobbyEvent('updated', $gameRoom->toArray()));
+                event(new GameRoomLobbyEvent('updated', $gameRoomArray));
 
                 return;
             }
 
-            // 3. Old: False -> New: True = Broadcast
-            // 4. Old: True -> New: True = Broadcast
-            $gameRoom->loadCount('users');
-            event(new GameRoomLobbyEvent('updated', $gameRoom->toArray()));
+            event(new GameRoomLobbyEvent('updated', $gameRoomArray));
         }));
     }
 
