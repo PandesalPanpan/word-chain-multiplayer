@@ -19,71 +19,11 @@
              x-data="{
                                 gameRooms: [],
                           }"
-             x-init="
-
-             const channel = Echo.channel('game-rooms');
-
-             // Fetch the game rooms
-             const fetchRooms = async () => {
-                 const response = await fetch('/api/game-rooms');
-                 const data = await response.json();
-                 gameRooms = data;
-             };
-
-             await fetchRooms();
-
-             channel.listen('GameRoomLobbyEvent', (event) => {
-                console.log('event received');
-                console.log(event);
-                console.log(event.gameRoom);
-
-
-                // Check event message if either created or update
-                if (event.action === 'created') {
-                    // Insert the new room into the gameRooms array
-                                        gameRooms.push(event.gameRoom);
-                }
-
-                if (event.action == 'updated') {
-                    console.log('Updating room');
-
-                    // Find the index of the room in the gameRooms array
-                    const index = gameRooms.findIndex(room => room.id === event.gameRoom.id);
-
-                    // Check if the room was not found
-                    if (index === -1) {
-                        // Add the new game room
-                        gameRooms.push(event.gameRoom);
-                        return;
-                    }
-
-                    // Read if the gameRoom.is_active is false
-                    if (!event.gameRoom.is_active) {
-                        console.log(index);
-                        // Remove the room from the gameRooms array
-                        gameRooms.splice(index, 1);
-
-                        // Exit the function
-                        return;
-                    }
-
-
-
-
-                    // Replace the room with the updated room
-                    console.log('Replacing: ', gameRooms[index]);
-                    console.log('With: ', event.gameRoom);
-                    gameRooms[index] = event.gameRoom;
-                }
-                // Loop through the rooms and console log their names
-                gameRooms.forEach(room => {
-                    console.log(room.name);
-                    console.log(room.users_count);
-                });
-            });
-
-
-        "
+             x-init="() => {
+                                fetch('/api/game-rooms')
+                                    .then(response => response.json())
+                                    .then(data => gameRooms = data)
+                          }"
         >
             <template x-if="gameRooms.length > 0">
                 <template x-for="room in gameRooms" :key="room.id">

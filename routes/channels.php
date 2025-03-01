@@ -3,11 +3,6 @@
 use App\Models\GameRoom;
 use Illuminate\Support\Facades\Broadcast;
 
-Broadcast::channel('game-rooms', function () {
-    // Allow users if authenticated
-    return true;
-});
-
 Broadcast::channel('game-rooms.{gameRoomId}', function ($user, $id) {
 
     $gameRoom = GameRoom::find($id);
