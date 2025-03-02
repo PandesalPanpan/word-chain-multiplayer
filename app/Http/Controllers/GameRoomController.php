@@ -28,11 +28,16 @@ class GameRoomController extends Controller
 
     public function show(GameRoom $gameRoom)
     {
-        $gameRoom->load('wordMoves');
+        // Check if the room is full already
+        // TODO: Implement the check
 
-        // Check if a room belongs to a user, if not, associate the user with the room
-        if ((bool) $gameRoom->host_id === false) {
-            $gameRoom->update(['host_id' => auth()->id()]);
+
+        // Check if the user belongs to a room already
+        if (auth()->user()->gameRoom) {
+            // dissociate the user from the room
+            auth()->user()->gameRoom()->dissociate()->save();
+            // send an event to the old room channel
+            // TODO: Implement the event
         }
 
         // Associate the authenticated user with the game room
@@ -111,9 +116,6 @@ class GameRoomController extends Controller
             'host_id' => auth()->id(),
             'name' => $request->name,
         ]);
-
-        // Associate the authenticated user with the game room
-        auth()->user()->gameRoom()->associate($gameRoom)->save();
 
         return redirect()->route('game-rooms.show', $gameRoom);
     }
