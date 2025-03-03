@@ -29,7 +29,10 @@ class GameRoomController extends Controller
     public function show(GameRoom $gameRoom)
     {
         // Check if the room is full already
-        // TODO: Implement the check
+        if ($gameRoom->users->count() >= 2) {
+            return redirect()->back()
+                ->with('error', 'The room is full (maximum 2 players allowed)');
+        }
 
 
         // Check if the user belongs to a room already
