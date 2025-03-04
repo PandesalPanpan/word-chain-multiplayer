@@ -50,7 +50,14 @@
                             usersHere = [];
                             Echo.leaveChannel(roomChannel);
                             window.location.href = '{{ route("game-rooms.index") }}';
+                        })
+                        .listen('DisconnectEvent', (event) => {
+                            console.log('User disconnected', event);
+                            this.usersHere = this.usersHere.filter(u => u.id !== event.user.id);
+                            delete this.userInputs[event.user.id];
+                            delete this.typingStates[event.user.id];
                         });
+                        ;
                     // Add beforeunload handler
                     const handleBeforeUnload = () => {
                         axios.post(`/game-rooms/${this.gameRoom[0].id}/leave`, {
@@ -135,5 +142,5 @@
                 </div>
             </div>
         </div>
-    </div
+    </div>
 </x-app-layout>

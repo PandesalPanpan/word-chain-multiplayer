@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\DisconnectEvent;
 use App\Events\GameRoomClosedEvent;
 use App\Models\GameRoom;
 use App\Models\User;
@@ -42,10 +43,12 @@ class GameRoomController extends Controller
 
         // Check if the user belongs to a room already
         if (auth()->user()->gameRoom) {
+            // Send an event to disconnect the user in the old room channel
+            event(new DisconnectEvent(auth()->user()));
+
             // dissociate the user from the room
             auth()->user()->gameRoom()->dissociate()->save();
             // send an event to the old room channel
-            // TODO: Implement the event
         }
 
         // Associate the authenticated user with the game room
@@ -75,7 +78,7 @@ class GameRoomController extends Controller
                     // Make all users leave the room
                     $gameRoom->users()->update(['game_room_id' => null]);
                     $gameRoom->update(['is_active' => false]);
-                    // TODO: Trigger an event to notify non host users to be redirected to the index page using alpine
+
                     event(new GameRoomClosedEvent($gameRoom));
                 } else {
                     try {
