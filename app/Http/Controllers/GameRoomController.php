@@ -36,6 +36,11 @@ class GameRoomController extends Controller
                 ->with('error', 'The room is not active');
         }
 
+        // Check if the user is already in the room
+        if (auth()->user()->gameRoom && auth()->user()->gameRoom->is($gameRoom)) {
+            return view('game-rooms.show', compact('gameRoom'));
+        }
+
         // Check if the room is full already
         if ($gameRoom->users->count() >= 2) {
             return redirect()->back()
