@@ -23,6 +23,7 @@ Route::middleware(['auth', 'nocache'])->group(function () {
     Route::get('/game-rooms/create', [GameRoomController::class, 'create'])->name('game-rooms.create');
     // Make wild cards routes are the last routes
     Route::get('/game-rooms/{gameRoom}', [GameRoomController::class, 'show'])->name('game-rooms.show');
+    Route::post('/game-rooms/{gameRoom}/start', [GameRoomController::class, 'start'])->name('game-rooms.start');
     Route::post('/game-rooms/{gameRoom}/leave', [GameRoomController::class, 'leave'])->name('game-rooms.leave');
 
 //    Route::post('/game-rooms/{gameRoom}/word-moves', [WordMoveController::class, 'store'])->name('word-moves.store');

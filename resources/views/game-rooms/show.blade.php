@@ -23,6 +23,18 @@
                     }, 1000);
                 },
 
+                startGame() {
+                    if (this.usersHere.length >= 2) {
+                        axios.post(`/game-rooms/${this.gameRoom[0].id}/start`)
+                            .then(response => {
+                                console.log('Game started successfully');
+                            })
+                            .catch(error => {
+                                console.error('Error starting game:', error);
+                            });
+                    }
+                },
+
                 init() {
                     // Store channel reference
                     const roomChannel = `game-rooms.${this.gameRoom[0].id}`;
@@ -57,16 +69,18 @@
                             this.usersHere = this.usersHere.filter(u => u.id !== event.user.id);
                             delete this.userInputs[event.user.id];
                             delete this.typingStates[event.user.id];
+                        })
+                        .listen('GameRoomStartEvent', (event) => {
+                            console.log('Game started', event);
                         });
-                        ;
                     // Add beforeunload handler
-                    const handleBeforeUnload = () => {
-                        axios.post(`/game-rooms/${this.gameRoom[0].id}/leave`, {
-                            user_id: {{ auth()->id() }}
-                        }).catch(error => console.error('Error leaving room:', error));
-                    };
+{{--                    const handleBeforeUnload = () => {--}}
+{{--                        axios.post(`/game-rooms/${this.gameRoom[0].id}/leave`, {--}}
+{{--                            user_id: {{ auth()->id() }}--}}
+{{--                        }).catch(error => console.error('Error leaving room:', error));--}}
+{{--                    };--}}
 
-                    window.addEventListener('beforeunload', handleBeforeUnload);
+{{--                    window.addEventListener('beforeunload', handleBeforeUnload);--}}
 
                 }
             }"
@@ -94,6 +108,19 @@
                                     color="red"
                                 >
                                     Leave Room
+                                </x-button>
+                            </div>
+                            <div class="mt-4 mb-4">
+                                <x-button
+                                    x-show="{{ auth()->id() }} === {{ $gameRoom->host_id }}"
+                                    @click="startGame()"
+                                    x-bind:disabled="usersHere.length < 2"
+                                    x-bind:class="{
+                                        'opacity-50 cursor-not-allowed': usersHere.length < 2
+                                    }"
+                                    class="w-full"
+                                >
+                                    <span x-text="usersHere.length < 2 ? 'Need More Players' : 'Start Game'"></span>
                                 </x-button>
                             </div>
                             <div class="mt-4 space-y-3" id="players-list">

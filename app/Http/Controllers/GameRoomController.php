@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Events\DisconnectEvent;
 use App\Events\GameRoomClosedEvent;
+use App\Events\GameRoomStartEvent;
 use App\Models\GameRoom;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -41,8 +42,8 @@ class GameRoomController extends Controller
                 ->with('error', 'The room is full (maximum 2 players allowed)');
         }
 
-        // Check if the user belongs to a room already
-        if (auth()->user()->gameRoom) {
+        // Check if the user belongs to a room already is not the current room
+        if (auth()->user()->gameRoom && ! auth()->user()->gameRoom->is($gameRoom)) {
             // Send an event to disconnect the user in the old room channel
             event(new DisconnectEvent(auth()->user()));
 
@@ -133,5 +134,31 @@ class GameRoomController extends Controller
         ]);
 
         return redirect()->route('game-rooms.show', $gameRoom);
+    }
+
+    // Start the game by sending an event to the game room channel
+    public function start(Request $request, GameRoom $gameRoom)
+    {
+        // Validate that the request comes from the host
+        if ($request->user()->id !== $gameRoom->host_id) {
+            return response()->json([
+                'message' => 'Unauthorized. Only the host can start the game.',
+            ], 403);
+        }
+
+        // Check if there are enough players
+        if ($gameRoom->users()->count() < 2) {
+            return response()->json([
+                'message' => 'Not enough players to start the game.',
+            ], 400);
+        }
+
+        // Update game room status
+        $gameRoom->update(['in_progress' => true]);
+
+        // Broadcast the game started event
+        event(new GameRoomStartEvent($gameRoom));
+
+        return response()->json(['message' => 'Game started successfully']);
     }
 }
