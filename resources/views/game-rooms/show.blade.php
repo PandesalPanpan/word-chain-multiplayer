@@ -27,7 +27,7 @@
                     const roomChannel = `game-rooms.${this.gameRoom[0].id}`;
 
                     // Initialize presence channel and store reference
-                    const presenceChannel = Echo.join(roomChannel)
+                    this.presenceChannel = Echo.join(roomChannel)
                         .here((users) => {
                             this.usersHere = users;
                         })
@@ -121,12 +121,12 @@
                                                 </span>
                                             </div>
                                             <input type="text"
-                                                class="w-full px-3 py-2 text-gray-700 bg-gray-100 border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                :disabled="user.id !== {{ auth()->id() }}"
-                                                :placeholder="user.id === {{ auth()->id() }} ? 'Type your word...' : 'Waiting for input...'"
-                                                :autofocus="user.id === {{ auth()->id() }}"
-                                                x-model="userInputs[user.id]"
-                                                @keyup="channel.whisper('typing', {
+                                                   class="w-full px-3 py-2 text-gray-700 bg-gray-100 border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                   :disabled="user.id !== {{ auth()->id() }}"
+                                                   :placeholder="user.id === {{ auth()->id() }} ? 'Type your word...' : 'Waiting for input...'"
+                                                   :autofocus="user.id === {{ auth()->id() }}"
+                                                   x-model="userInputs[user.id]"
+                                                   @keyup="presenceChannel.whisper('typing', {
                                                     user: {{ Js::from(auth()->user()->only('id', 'name')) }},
                                                     key: $event.key,
                                                     text: $event.target.value,
