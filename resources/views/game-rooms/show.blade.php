@@ -23,7 +23,11 @@
                 },
 
                 init() {
-                    this.channel = Echo.join(`game-rooms.${this.gameRoom[0].id}`)
+                    // Store channel reference
+                    const roomChannel = `game-rooms.${this.gameRoom[0].id}`;
+
+                    // Initialize presence channel and store reference
+                    const presenceChannel = Echo.join(roomChannel)
                         .here((users) => {
                             this.usersHere = users;
                         })
@@ -37,12 +41,25 @@
                         })
                         .listenForWhisper('typing', (event) => {
                             if (event.user.id !== {{ auth()->id() }}) {
-                                // Update input value
                                 this.userInputs[event.user.id] = event.text;
-                                // Show typing indicator
                                 this.updateTypingState(event.user.id);
                             }
+                        })
+                        .listen('GameRoomClosedEvent', (event) => {
+                            console.log('Room closed by host', event);
+                            usersHere = [];
+                            Echo.leaveChannel(roomChannel);
+                            window.location.href = '{{ route("game-rooms.index") }}';
                         });
+                    // Add beforeunload handler
+                    const handleBeforeUnload = () => {
+                        axios.post(`/game-rooms/${this.gameRoom[0].id}/leave`, {
+                            user_id: {{ auth()->id() }}
+                        }).catch(error => console.error('Error leaving room:', error));
+                    };
+
+                    window.addEventListener('beforeunload', handleBeforeUnload);
+
                 }
             }"
             >
@@ -50,14 +67,21 @@
                 <div class="lg:col-span-1">
                     <div class="overflow-hidden bg-white shadow-sm dark:bg-gray-800 sm:rounded-lg">
                         <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
-                                Players
-                            </h3>
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                                    Players
+                                </h3>
+                                <button
+                                    @click="window.location.href = '{{ route('game-rooms.index') }}'"
+                                    class="px-3 py-1 text-sm text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors">
+                                    Leave Room
+                                </button>
+                            </div>
                             <div class="mt-4 space-y-3" id="players-list">
                                 <!-- Players will be listed here -->
                                 <div x-show="usersHere.length === 0">
                                     <p class="text-gray-500 dark:text-gray-400">
-                                        No players in the room yet.
+                                        Connecting.
                                     </p>
                                 </div>
                                 <div x-show="usersHere.length > 0">
@@ -111,5 +135,5 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div
 </x-app-layout>
