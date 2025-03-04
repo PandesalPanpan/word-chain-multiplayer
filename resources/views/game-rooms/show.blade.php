@@ -8,12 +8,13 @@
     <div class="py-12">
         <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
             <div class="lg:grid lg:grid-cols-4 lg:gap-8"
-            x-data="{
+                 x-data="{
                 gameRoom: [{{ $gameRoom->toJson() }}],
                 usersHere: [],
                 userTyping: [],
                 typingStates: {},
                 userInputs: {},
+                presenceChannel: null,
 
                 updateTypingState(userId) {
                     this.typingStates[userId] = true;
@@ -74,15 +75,26 @@
                 <div class="lg:col-span-1">
                     <div class="overflow-hidden bg-white shadow-sm dark:bg-gray-800 sm:rounded-lg">
                         <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                            <div class="mb-4 text-center">
+                                <span x-show="usersHere.length === 0"
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100">
+                                    Connecting...
+                                </span>
+                                <span x-show="usersHere.length === 1"
+                                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+                                    Waiting for Players
+                                </span>
+                            </div>
                             <div class="flex justify-between items-center">
                                 <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
                                     Players
                                 </h3>
-                                <button
+                                <x-button
                                     @click="window.location.href = '{{ route('game-rooms.index') }}'"
-                                    class="px-3 py-1 text-sm text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors">
+                                    color="red"
+                                >
                                     Leave Room
-                                </button>
+                                </x-button>
                             </div>
                             <div class="mt-4 space-y-3" id="players-list">
                                 <!-- Players will be listed here -->
