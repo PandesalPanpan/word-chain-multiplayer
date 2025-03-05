@@ -1,4 +1,5 @@
 <x-app-layout>
+    <x-game-notification />
     <x-slot name="header">
         <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
             Game Room: {{ $gameRoom->name }}
@@ -17,6 +18,7 @@
                 presenceChannel: null,
                 currentPlayerId: {{ $gameRoom->current_player_id ?? 'null' }},
                 lastWord: '{{ $gameRoom->last_word ?? '' }}',
+                words_used: [],
 
                 updateTypingState(userId) {
                     this.typingStates[userId] = true;
@@ -97,6 +99,30 @@
                             console.log('Game started', event);
                             this.currentPlayerId = event.firstPlayer.id;
                             console.log('Game started, first player:', event.firstPlayer.name);
+                        })
+                        .listen('GameRoomTurnValidatedEvent', (event) => {
+                            if (event.isValid) {
+                                // Update current player
+                                this.currentPlayerId = event.nextPlayer.id;
+
+                                // Clear input of the player who just played
+                                this.userInputs[event.user.id] = '';
+
+                                // Add word to used words list (if you're tracking that)
+                                this.words_used.push(event.word);
+
+                                // Show success message
+                                this.$dispatch('notify', {
+                                    type: 'success',
+                                    message: `${event.user.name}: ${event.word} - ${event.message}`
+                                });
+                            } else {
+                                // Show error message only
+                                this.$dispatch('notify', {
+                                    type: 'error',
+                                    message: `${event.user.name}: ${event.word} - ${event.message}`
+                                });
+                            }
                         });
                     // Add beforeunload handler
 {{--                    const handleBeforeUnload = () => {--}}

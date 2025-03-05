@@ -24,9 +24,10 @@ Route::middleware(['auth', 'nocache'])->group(function () {
     // Make wild cards routes are the last routes
     Route::get('/game-rooms/{gameRoom}', [GameRoomController::class, 'show'])->name('game-rooms.show');
     Route::post('/game-rooms/{gameRoom}/start', [GameRoomController::class, 'start'])->name('game-rooms.start');
+    Route::post('/game-rooms/{gameRoom}/submit-word', [GameRoomController::class, 'submitWord'])->name('game-rooms.submit-word');
     Route::post('/game-rooms/{gameRoom}/leave', [GameRoomController::class, 'leave'])->name('game-rooms.leave');
 
-//    Route::post('/game-rooms/{gameRoom}/word-moves', [WordMoveController::class, 'store'])->name('word-moves.store');
+    //    Route::post('/game-rooms/{gameRoom}/word-moves', [WordMoveController::class, 'store'])->name('word-moves.store');
 });
 
 Route::middleware('auth')->group(function () {

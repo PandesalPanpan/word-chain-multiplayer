@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\DisconnectEvent;
 use App\Events\GameRoomClosedEvent;
 use App\Events\GameRoomStartEvent;
+use App\Events\GameRoomTurnValidatedEvent;
 use App\Models\GameRoom;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -174,5 +175,62 @@ class GameRoomController extends Controller
         event(new GameRoomStartEvent($gameRoom, $firstPlayer));
 
         return response()->json(['message' => 'Game started successfully']);
+    }
+
+    public function submitWord(Request $request, GameRoom $gameRoom)
+    {
+        logger('Submit Word called: '. $request->word);
+
+        // Validate the users turn
+        if ($gameRoom->current_player_id !== $request->user()->id) {
+            return response()->json([
+                'message' => 'It is not your turn.',
+            ], 403);
+        }
+
+        $request->validate([
+            'word' => 'required|string|min:2',
+        ]);
+
+        // TODO: Include in the frontend to send the word with the request
+        $word = strtolower($request->word);
+        $lastWord = $gameRoom->wordMoves()->latest()->first()?->word ?? '';
+
+        $isValid = true;
+        $message = 'Valid Word!';
+
+        if (! empty($lastWord)) {
+            if (substr($lastWord, -1) !== substr($word, 0, 1)) {
+                $isValid = false;
+                $message = 'Word must start with the last letter of the previous word';
+            }
+        }
+
+        // Additional validation
+        if ($isValid) {
+            $gameRoom->wordMoves()->create([
+                'user_id' => $request->user()->id,
+                'word' => $word,
+            ]);
+
+            // Next Player
+            $nextPlayer = $gameRoom->users()->where('id', '!=', $request->user()->id)->first();
+            $gameRoom->update(['current_player_id' => $nextPlayer->id]);
+        }
+
+        event(new GameRoomTurnValidatedEvent(
+            $gameRoom,
+            $request->user(),
+            $word,
+            $isValid,
+            $message,
+            $isValid ? $nextPlayer : null
+        ));
+
+        return response()->json([
+            'status' => $isValid ? 'success' : 'error',
+            'message' => $message,
+        ]);
+
     }
 }
