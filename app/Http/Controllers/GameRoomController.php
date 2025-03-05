@@ -107,7 +107,11 @@ class GameRoomController extends Controller
                 break;
 
             case 4: // Room has no users
-                $gameRoom->update(['is_active' => false]);
+                $gameRoom->update([
+                    'is_active' => false,
+                    'current_player_id' => null,
+                    'in_progress' => false,
+                ]);
                 break;
         }
 
@@ -158,11 +162,16 @@ class GameRoomController extends Controller
             ], 400);
         }
 
+        $firstPlayer = $gameRoom->users()->inRandomOrder()->first();
+
         // Update game room status
-        $gameRoom->update(['in_progress' => true]);
+        $gameRoom->update([
+            'in_progress' => true,
+            'current_player_id' => $firstPlayer->id,
+        ]);
 
         // Broadcast the game started event
-        event(new GameRoomStartEvent($gameRoom));
+        event(new GameRoomStartEvent($gameRoom, $firstPlayer));
 
         return response()->json(['message' => 'Game started successfully']);
     }

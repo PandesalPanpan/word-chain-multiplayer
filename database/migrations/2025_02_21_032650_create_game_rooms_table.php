@@ -11,6 +11,7 @@ return new class extends Migration {
         Schema::create('game_rooms', function (Blueprint $table) {
             $table->id();
             $table->foreignIdFor(User::class, 'host_id');
+            $table->foreignIdFor(User::class, 'current_player_id')->nullable();
             $table->string('name');
             $table->boolean('is_active')->default(true);
             $table->boolean('in_progress')->default(false);

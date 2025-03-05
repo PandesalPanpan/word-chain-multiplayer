@@ -15,6 +15,8 @@
                 typingStates: {},
                 userInputs: {},
                 presenceChannel: null,
+                currentPlayerId: {{ $gameRoom->current_player_id ?? 'null' }},
+                lastWord: '{{ $gameRoom->last_word ?? '' }}',
 
                 updateTypingState(userId) {
                     this.typingStates[userId] = true;
@@ -33,6 +35,27 @@
                                 console.error('Error starting game:', error);
                             });
                     }
+                },
+
+                isMyTurn() {
+                    return this.currentPlayerId === {{ auth()->id() }};
+                },
+
+                submitWord() {
+                    if (!this.isMyTurn()) return;
+
+                    const myInput = this.userInputs[{{ auth()->id() }}];
+                    if (!myInput) return;
+
+                    axios.post(`/game-rooms/${this.gameRoom[0].id}/submit-word`, {
+                        word: myInput
+                    })
+                    .then(response => {
+                        this.userInputs[{{ auth()->id() }}] = '';
+                    })
+                    .catch(error => {
+                        alert(error.response.data.message);
+                    });
                 },
 
                 init() {
@@ -72,6 +95,8 @@
                         })
                         .listen('GameRoomStartEvent', (event) => {
                             console.log('Game started', event);
+                            this.currentPlayerId = event.firstPlayer.id;
+                            console.log('Game started, first player:', event.firstPlayer.name);
                         });
                     // Add beforeunload handler
 {{--                    const handleBeforeUnload = () => {--}}
@@ -91,7 +116,7 @@
                         <div class="p-6 border-b border-gray-200 dark:border-gray-700">
                             <div class="mb-4 text-center">
                                 <span x-show="usersHere.length === 0"
-                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100">
+                                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100">
                                     Connecting...
                                 </span>
                                 <span x-show="usersHere.length === 1"
@@ -160,17 +185,22 @@
                                                 </span>
                                             </div>
                                             <input type="text"
-                                                   class="w-full px-3 py-2 text-gray-700 bg-gray-100 border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                   class="w-full px-3 py-2 border-gray-300 rounded-md transition-all duration-200 ease-in-out"
+                                                   :class="{
+                                                   'bg-emerald-100 dark:bg-emerald-900 border-emerald-500 dark:border-emerald-500 font-semibold text-emerald-900 dark:text-emerald-100 ring-2 ring-emerald-500': isMyTurn() && user.id === {{ auth()->id() }},
+                                                   'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100': user.id === {{ auth()->id() }} && !isMyTurn(),
+                                                   'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400': user.id !== {{ auth()->id() }}
+                                               }"
                                                    :disabled="user.id !== {{ auth()->id() }}"
-                                                   :placeholder="user.id === {{ auth()->id() }} ? 'Type your word...' : 'Waiting for input...'"
-                                                   :autofocus="user.id === {{ auth()->id() }}"
+                                                   :placeholder="isMyTurn() && user.id === {{ auth()->id() }} ? 'Your turn - Enter a word...' : 'Waiting for other player...'"
                                                    x-model="userInputs[user.id]"
+                                                   @keydown.enter.prevent="isMyTurn() && user.id === {{ auth()->id() }} ? submitWord() : null"
                                                    @keyup="presenceChannel.whisper('typing', {
-                                                    user: {{ Js::from(auth()->user()->only('id', 'name')) }},
-                                                    key: $event.key,
-                                                    text: $event.target.value,
-                                                    timestamp: Date.now()
-                                                })"
+                                                   user: {{ Js::from(auth()->user()->only('id', 'name')) }},
+                                                   key: $event.key,
+                                                   text: $event.target.value,
+                                                   timestamp: Date.now()
+                                               })"
                                             >
                                         </div>
                                     </template>

@@ -10,13 +10,17 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class GameRoomStartEvent implements ShouldBroadcast
+class GameRoomTurnValidatedEvent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(
         public GameRoom $gameRoom,
-        public User $firstPlayer,
+        public User $user,
+        public string $word,
+        public bool $isValid,
+        public string $message,
+        public ?User $nextPlayer = null
     ) {}
 
     public function broadcastOn(): array
