@@ -172,6 +172,9 @@
                                 // Add word to used words list (if you're tracking that)
                                 this.words_used.push(event.word);
 
+                                // Update lastWord property
+                                this.lastWord = event.word;
+
                                 // Show success message
                                 this.$dispatch('notify', {
                                     type: 'success',
