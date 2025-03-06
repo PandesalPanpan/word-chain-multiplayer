@@ -89,7 +89,6 @@
                 },
 
                 validateAndSubmit() {
-                    console.log('Validating and submitting word');
                     if (!this.isMyTurn()) return;
 
                     const myInput = this.userInputs[{{ auth()->id() }}];
@@ -97,7 +96,6 @@
 
                     // Don't submit if validation fails
                     if (this.isInvalidInput(myInput)) {
-                        console.log('Invalid input:', myInput);
                         this.$dispatch('notify', {
                             type: 'error',
                             message: this.getInputErrorMessage(myInput)
@@ -106,7 +104,6 @@
                     }
 
                     // Proceed with submission
-                    console.log('Word validated - Submitting word:', myInput);
                     axios.post(`/game-rooms/${this.gameRoom[0].id}/submit-word`, {
                         word: myInput
                     })
@@ -310,32 +307,28 @@
                                     <div x-show="lastWord" class="mb-4">
                                         <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Last Word:</p>
                                         <span
-                                            class="inline-flex items-center px-3 py-1.5 rounded-md text-md font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 border border-purple-300 dark:border-purple-700">
-                                        <span x-text="lastWord"></span>
-                                    </span>
+                                            class="inline-flex items-center px-4 py-2 rounded-md text-lg font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 border border-purple-300 dark:border-purple-700">
+                                            <!-- Apply the same highlighting style to the last word badge -->
+                                            <template x-if="lastWord && lastWord.length > 0">
+                                                <span>
+                                                    <span x-text="lastWord.slice(0, -1).toUpperCase()"></span>
+                                                    <span class="font-bold text-red-600 dark:text-red-400 underline"
+                                                          x-text="lastWord.slice(-1).toUpperCase()"></span>
+                                                </span>
+                                            </template>
+                                        </span>
                                     </div>
 
                                     <!-- Words Used Badges -->
                                     <div class="flex flex-wrap gap-3">
                                         <template x-for="(word, index) in [...words_used].reverse()" :key="index">
-                                            <span
-                                                class="inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium"
-                                                :class="{
+                                            <span class="inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium"
+                                                  :class="{
                                                       'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200': index !== 0,
                                                       'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 ring-2 ring-emerald-500': index === 0
                                                   }">
-                                                <!-- Display capitalized word with highlighted last letter for the most recent word -->
-                                                <template x-if="index === 0 && word.length > 0">
-                                                    <span>
-                                                        <span x-text="word.slice(0, -1).toUpperCase()"></span>
-                                                        <span class="font-bold text-red-600 dark:text-red-400 underline"
-                                                              x-text="word.slice(-1).toUpperCase()"></span>
-                                                    </span>
-                                                </template>
-                                                <!-- Regular capitalized display for other words -->
-                                                <template x-if="index !== 0">
-                                                    <span x-text="word.toUpperCase()"></span>
-                                                </template>
+                                                <!-- Regular capitalized display for all words in the list -->
+                                                <span x-text="word.toUpperCase()"></span>
                                             </span>
                                         </template>
 
