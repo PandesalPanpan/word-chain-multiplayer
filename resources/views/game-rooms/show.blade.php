@@ -17,7 +17,7 @@
                 userInputs: {},
                 presenceChannel: null,
                 currentPlayerId: {{ $gameRoom->current_player_id ?? 'null' }},
-                lastWord: '{{ $gameRoom->last_word ?? '' }}',
+                lastWord: '{{ $gameRoom->last_word ?? '' }}', // TODO - Add last word to game room model
                 words_used: [],
 
                 updateTypingState(userId) {
@@ -43,12 +43,70 @@
                     return this.currentPlayerId === {{ auth()->id() }};
                 },
 
-                submitWord() {
+                // Add these new methods
+                isInvalidInput(word) {
+                    console.log('Validating word:', word);
+                    console.log('Last word is:', this.lastWord);
+                    console.log('Words used:', this.words_used);
+                    if (!word || word.trim() === '') return false;
+
+                    // Must start with the last letter of previous word (if there is one)
+                    if (this.lastWord && this.lastWord.length > 0) {
+                        const lastLetter = this.lastWord.slice(-1).toLowerCase();
+                        const firstLetter = word.trim().slice(0, 1).toLowerCase();
+                        if (firstLetter !== lastLetter) {
+                            return true;
+                        }
+                    }
+
+                    // Cannot be a previously used word
+                    if (this.words_used.map(w => w.toLowerCase()).includes(word.trim().toLowerCase())) {
+                        return true;
+                    }
+
+                    return false;
+                },
+
+                getInputErrorMessage(word) {
+                    console.log('Error Validating input:', word);
+                    if (!word || word.trim() === '') return '';
+
+                    // Check first letter
+                    if (this.lastWord && this.lastWord.length > 0) {
+                        const lastLetter = this.lastWord.slice(-1).toLowerCase();
+                        const firstLetter = word.trim().slice(0, 1).toLowerCase();
+                        if (firstLetter !== lastLetter) {
+                            return `Word must start with '${lastLetter.toUpperCase()}'`;
+                        }
+                    }
+
+                    // Check if word was used
+                    if (this.words_used.map(w => w.toLowerCase()).includes(word.trim().toLowerCase())) {
+                        return 'This word has already been used';
+                    }
+
+                    return '';
+                },
+
+                validateAndSubmit() {
+                    console.log('Validating and submitting word');
                     if (!this.isMyTurn()) return;
 
                     const myInput = this.userInputs[{{ auth()->id() }}];
                     if (!myInput) return;
 
+                    // Don't submit if validation fails
+                    if (this.isInvalidInput(myInput)) {
+                        console.log('Invalid input:', myInput);
+                        this.$dispatch('notify', {
+                            type: 'error',
+                            message: this.getInputErrorMessage(myInput)
+                        });
+                        return;
+                    }
+
+                    // Proceed with submission
+                    console.log('Word validated - Submitting word:', myInput);
                     axios.post(`/game-rooms/${this.gameRoom[0].id}/submit-word`, {
                         word: myInput
                     })
@@ -56,7 +114,10 @@
                         this.userInputs[{{ auth()->id() }}] = '';
                     })
                     .catch(error => {
-                        alert(error.response.data.message);
+                        this.$dispatch('notify', {
+                            type: 'error',
+                            message: error.response?.data?.message || 'An error occurred'
+                        });
                     });
                 },
 
@@ -198,7 +259,7 @@
                     <div class="overflow-hidden bg-white shadow-sm dark:bg-gray-800 sm:rounded-lg">
                         <div class="p-6 border-b border-gray-200 dark:border-gray-700">
                             <div class="space-y-4">
-                                <div x-data="{ words_used: [] }" x-show="usersHere.length > 0">
+                                <div x-show="usersHere.length > 0">
                                     <template x-for="user in usersHere" :key="user.id">
                                         <div class="space-y-2">
                                             <div class="flex items-center space-x-3">
@@ -213,21 +274,27 @@
                                             <input type="text"
                                                    class="w-full px-3 py-2 border-gray-300 rounded-md transition-all duration-200 ease-in-out"
                                                    :class="{
-                                                   'bg-emerald-100 dark:bg-emerald-900 border-emerald-500 dark:border-emerald-500 font-semibold text-emerald-900 dark:text-emerald-100 ring-2 ring-emerald-500': isMyTurn() && user.id === {{ auth()->id() }},
-                                                   'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100': user.id === {{ auth()->id() }} && !isMyTurn(),
-                                                   'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400': user.id !== {{ auth()->id() }}
-                                               }"
+                                                       'bg-emerald-100 dark:bg-emerald-900 border-emerald-500 dark:border-emerald-500 font-semibold text-emerald-900 dark:text-emerald-100 ring-2 ring-emerald-500': isMyTurn() && user.id === {{ auth()->id() }},
+                                                       'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100': user.id === {{ auth()->id() }} && !isMyTurn(),
+                                                       'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400': user.id !== {{ auth()->id() }},
+                                                       'border-red-500 dark:border-red-500 ring-2 ring-red-500': isInvalidInput(userInputs[user.id])
+                                                   }"
                                                    :disabled="user.id !== {{ auth()->id() }}"
-                                                   :placeholder="isMyTurn() && user.id === {{ auth()->id() }} ? 'Your turn - Enter a word...' : 'Waiting for other player...'"
+                                                   :placeholder="isMyTurn() && user.id === {{ auth()->id() }} ? `Start with '${lastWord ? lastWord.slice(-1).toUpperCase() : ''}' - Enter a word...` : 'Waiting for other player...'"
                                                    x-model="userInputs[user.id]"
-                                                   @keydown.enter.prevent="isMyTurn() && user.id === {{ auth()->id() }} ? submitWord() : null"
+                                                   @keydown.enter.prevent="isMyTurn() && user.id === {{ auth()->id() }} ? validateAndSubmit() : null"
                                                    @keyup="presenceChannel.whisper('typing', {
-                                                   user: {{ Js::from(auth()->user()->only('id', 'name')) }},
-                                                   key: $event.key,
-                                                   text: $event.target.value,
-                                                   timestamp: Date.now()
-                                               })"
+                                                       user: {{ Js::from(auth()->user()->only('id', 'name')) }},
+                                                       key: $event.key,
+                                                       text: $event.target.value,
+                                                       timestamp: Date.now()
+                                                   })"
                                             >
+                                            <div
+                                                x-show="isMyTurn() && user.id === {{ auth()->id() }} && isInvalidInput(userInputs[user.id])"
+                                                class="mt-1 text-sm text-red-600 dark:text-red-400">
+                                                <span x-text="getInputErrorMessage(userInputs[user.id])"></span>
+                                            </div>
                                         </div>
                                     </template>
                                 </div>
