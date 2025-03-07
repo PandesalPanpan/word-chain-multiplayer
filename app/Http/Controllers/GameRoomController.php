@@ -31,6 +31,8 @@ class GameRoomController extends Controller
 
     public function show(GameRoom $gameRoom)
     {
+        // Include the game room word moves
+        $gameRoom = $gameRoom->load('wordMoves');
         // Check if the room is active
         if (! $gameRoom->is_active) {
             return redirect()->route('game-rooms.index')
@@ -179,8 +181,6 @@ class GameRoomController extends Controller
 
     public function submitWord(Request $request, GameRoom $gameRoom)
     {
-        logger('Submit Word called: '.$request->word);
-
         // Validate the users turn
         if ($gameRoom->current_player_id !== $request->user()->id) {
             return response()->json([

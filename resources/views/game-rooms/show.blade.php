@@ -185,6 +185,17 @@
                                 });
                             }
                         });
+
+                        if (this.gameRoom[0].word_moves && this.gameRoom[0].word_moves.length > 0) {
+                            const usedWords = this.gameRoom[0].word_moves.map(move => move.word);
+
+                            // Also populate the words_used array with these words
+                            this.words_used = usedWords;
+
+                            // Set the last word to the most recent one
+                            this.lastWord = usedWords[usedWords.length - 1];
+
+                        }
                     // Add beforeunload handler
 {{--                    const handleBeforeUnload = () => {--}}
 {{--                        axios.post(`/game-rooms/${this.gameRoom[0].id}/leave`, {--}}
