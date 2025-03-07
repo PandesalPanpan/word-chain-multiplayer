@@ -6,6 +6,7 @@ use App\Events\DisconnectEvent;
 use App\Events\GameRoomClosedEvent;
 use App\Events\GameRoomStartEvent;
 use App\Events\GameRoomTurnValidatedEvent;
+use App\Models\DictionaryWord;
 use App\Models\GameRoom;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -208,9 +209,14 @@ class GameRoomController extends Controller
             }
         }
 
-        if (in_array($word, $words)) {
+        if ($isValid && in_array($word, $words)) {
             $isValid = false;
             $message = 'Word has already been played.';
+        }
+
+        if ($isValid && ! DictionaryWord::where('word', $word)->exists()) {
+            $isValid = false;
+            $message = 'Word is not found in dictionary.';
         }
 
         // Additional validation
