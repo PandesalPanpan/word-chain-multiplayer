@@ -188,8 +188,9 @@ class GameRoomController extends Controller
             ], 403);
         }
 
+        // The word should only be a single word and no space
         $request->validate([
-            'word' => 'required|string|min:2',
+            'word' => 'required|string|alpha',
         ]);
 
         $word = strtolower($request->word);
