@@ -179,7 +179,7 @@ class GameRoomController extends Controller
 
     public function submitWord(Request $request, GameRoom $gameRoom)
     {
-        logger('Submit Word called: '. $request->word);
+        logger('Submit Word called: '.$request->word);
 
         // Validate the users turn
         if ($gameRoom->current_player_id !== $request->user()->id) {
@@ -192,9 +192,10 @@ class GameRoomController extends Controller
             'word' => 'required|string|min:2',
         ]);
 
-        // TODO: Include in the frontend to send the word with the request
         $word = strtolower($request->word);
-        $lastWord = $gameRoom->wordMoves()->latest()->first()?->word ?? '';
+        // Grab all the words that have been played
+        $words = $gameRoom->wordMoves->pluck('word')->toArray();
+        $lastWord = end($words);
 
         $isValid = true;
         $message = 'Valid Word!';
@@ -202,8 +203,13 @@ class GameRoomController extends Controller
         if (! empty($lastWord)) {
             if (substr($lastWord, -1) !== substr($word, 0, 1)) {
                 $isValid = false;
-                $message = 'Word must start with the last letter of the previous word';
+                $message = 'Word must start with the last letter of the word '.$lastWord.'.';
             }
+        }
+
+        if (in_array($word, $words)) {
+            $isValid = false;
+            $message = 'Word has already been played.';
         }
 
         // Additional validation
