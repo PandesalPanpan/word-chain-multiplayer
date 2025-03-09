@@ -242,6 +242,14 @@
                                       class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
                                     Waiting for Players
                                 </span>
+                                <span x-show="usersHere.length >= 2 && gameRoom[0].in_progress"
+                                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-800 dark:text-emerald-100">
+                                    Game in Progress
+                                </span>
+                                <span x-show="usersHere.length >= 2 && !gameRoom[0].in_progress"
+                                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-800 dark:text-amber-100">
+                                    Ready to Start
+                                </span>
                             </div>
                             <div class="flex justify-between items-center">
                                 <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
