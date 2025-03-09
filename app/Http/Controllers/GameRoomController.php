@@ -209,6 +209,11 @@ class GameRoomController extends Controller
             }
         }
 
+        if ($isValid && strlen($word) < 3) {
+            $isValid = false;
+            $message = 'Word must be at least 3 characters long.';
+        }
+
         if ($isValid && in_array($word, $words)) {
             $isValid = false;
             $message = 'Word has already been played.';
