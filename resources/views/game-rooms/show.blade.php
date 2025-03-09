@@ -50,6 +50,11 @@
                     console.log('Words used:', this.words_used);
                     if (!word || word.trim() === '') return false;
 
+                    // Check if the word is least 3 characters long
+                    if (word.trim().length < 3) {
+                        return true;
+                    }
+
                     if (!/^[a-zA-Z]+$/.test(word)) {
                         return true;
                     }
@@ -101,6 +106,15 @@
 
                     const myInput = this.userInputs[{{ auth()->id() }}];
                     if (!myInput) return;
+
+                    // Isolated validation for length
+                    if (myInput.trim().length < 3) {
+                        this.$dispatch('notify', {
+                            type: 'error',
+                            message: 'Word must be at least 3 characters long'
+                        });
+                        return;
+                    }
 
                     // Don't submit if validation fails
                     if (this.isInvalidInput(myInput)) {
