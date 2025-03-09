@@ -266,9 +266,9 @@
                                 <x-button
                                     x-show="{{ auth()->id() }} === {{ $gameRoom->host_id }}"
                                     @click="startGame()"
-                                    x-bind:disabled="usersHere.length < 2"
+                                    x-bind:disabled="usersHere.length < 2 || gameRoom[0].in_progress"
                                     x-bind:class="{
-                                        'opacity-50 cursor-not-allowed': usersHere.length < 2
+                                        'opacity-50 cursor-not-allowed': usersHere.length < 2 || gameRoom[0].in_progress
                                     }"
                                     class="w-full"
                                 >
