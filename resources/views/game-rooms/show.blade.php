@@ -50,6 +50,10 @@
                     console.log('Words used:', this.words_used);
                     if (!word || word.trim() === '') return false;
 
+                    if (!/^[a-zA-Z]+$/.test(word)) {
+                        return true;
+                    }
+
                     // Must start with the last letter of previous word (if there is one)
                     if (this.lastWord && this.lastWord.length > 0) {
                         const lastLetter = this.lastWord.slice(-1).toLowerCase();
@@ -70,6 +74,10 @@
                 getInputErrorMessage(word) {
                     console.log('Error Validating input:', word);
                     if (!word || word.trim() === '') return '';
+
+                    if (!/^[a-zA-Z]+$/.test(word)) {
+                        return 'Word must contain only letters (a-z, A-Z)';
+                    }
 
                     // Check first letter
                     if (this.lastWord && this.lastWord.length > 0) {
