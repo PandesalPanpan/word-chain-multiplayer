@@ -200,7 +200,6 @@
                                     message: `${event.user.name}: ${event.word} - ${event.message}`
                                 });
                             } else {
-                                // Show error message only
                                 this.$dispatch('notify', {
                                     type: 'error',
                                     message: `${event.user.name}: ${event.word} - ${event.message}`
