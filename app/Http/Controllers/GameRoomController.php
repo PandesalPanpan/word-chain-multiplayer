@@ -159,6 +159,13 @@ class GameRoomController extends Controller
             ], 403);
         }
 
+        // Check if the game room is already in progress
+        if ($gameRoom->in_progress) {
+            return response()->json([
+                'message' => 'Game is already in progress.',
+            ], 400);
+        }
+
         // Check if there are enough players
         if ($gameRoom->users()->count() < 2) {
             return response()->json([
