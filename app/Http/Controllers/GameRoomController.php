@@ -240,7 +240,12 @@ class GameRoomController extends Controller
 
             // Next Player
             $nextPlayer = $gameRoom->users()->where('id', '!=', $request->user()->id)->first();
-            $gameRoom->update(['current_player_id' => $nextPlayer->id]);
+            $turnDeadline = now()->addSeconds(15);
+
+            $gameRoom->update([
+                'current_player_id' => $nextPlayer->id,
+                'turn_deadline' => $turnDeadline,
+            ]);
         }
 
         event(new GameRoomTurnValidatedEvent(
