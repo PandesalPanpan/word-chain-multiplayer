@@ -43,8 +43,8 @@ class ImportDictionaryWordsCommand extends Command
             while (($word = fgets($file)) !== false) {
                 $word = trim($word);
 
-                // Skip words less than 3 characters
-                if (strlen($word) < 3) {
+                // Skip words less than 4 characters
+                if (strlen($word) < 4) {
                     $totalSkipped++;
 
                     continue;
@@ -71,7 +71,7 @@ class ImportDictionaryWordsCommand extends Command
             DB::commit();
             fclose($file);
 
-            $this->info("Import complete! Imported $totalImported words. Skipped $totalSkipped words shorter than 3 characters.");
+            $this->info("Import complete! Imported $totalImported words. Skipped $totalSkipped words shorter than 4 characters.");
 
             return CommandAlias::SUCCESS;
         } catch (\Exception $e) {
