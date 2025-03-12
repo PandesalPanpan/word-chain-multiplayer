@@ -19,6 +19,9 @@
                 currentPlayerId: {{ $gameRoom->current_player_id ?? 'null' }},
                 lastWord: '{{ $gameRoom->last_word ?? '' }}', // TODO - Add last word to game room model
                 words_used: [],
+                turnDeadline: '{{ $gameRoom->turn_deadline ?? '' }}',
+                timeRemaining: 10,
+                countdownInterval: null,
 
                 updateTypingState(userId) {
                     this.typingStates[userId] = true;
@@ -43,15 +46,83 @@
                     return this.currentPlayerId === {{ auth()->id() }};
                 },
 
-                // Add these new methods
+                startCountdown() {
+                    console.log('Starting countdown');
+                    if (this.countdownInterval) {
+                        clearInterval(this.countdownInterval);
+                    }
+
+                    if (!this.turnDeadline) {
+                        this.timeRemaining = 10;
+                        return;
+                    }
+
+                    // Ensure we have a valid Date object
+                    const deadlineDate = new Date(this.turnDeadline);
+                    
+                    // Log for debugging
+                    console.log('Deadline String:', this.turnDeadline);
+                    console.log('Deadline Date Object:', deadlineDate);
+                    console.log('Deadline Timestamp:', deadlineDate.getTime());
+                    
+                    // Check if date is valid before proceeding
+                    if (isNaN(deadlineDate.getTime())) {
+                        console.error('Invalid date format:', this.turnDeadline);
+                        this.timeRemaining = 10; // Fallback to default
+                        return;
+                    }
+
+                    const deadline = deadlineDate.getTime();
+
+                    // Update time remaining immediately
+                    this.updateTimeRemaining(deadline);
+
+                    // Then update every second
+                    this.countdownInterval = setInterval(() => {
+                        if (!this.updateTimeRemaining(deadline)) {
+                            clearInterval(this.countdownInterval);
+                        }
+                    }, 1000);
+                },
+
+                updateTimeRemaining(deadline) {
+                    const now = new Date().getTime();
+                    const diff = deadline - now;
+                    
+                    // Debug information
+                    console.log('Now:', now, new Date(now).toISOString());
+                    console.log('Deadline:', deadline, new Date(deadline).toISOString());
+                    console.log('Time difference (ms):', diff);
+
+                    if (diff <= 0) {
+                        this.timeRemaining = 0;
+                        return false;
+                    }
+
+                    this.timeRemaining = Math.ceil(diff / 1000);
+                    return true;
+                },
+
+                getTimeRemainingColor() {
+                    if (this.timeRemaining > 10) return 'text-green-600 dark:text-green-400';
+                    if (this.timeRemaining > 5) return 'text-yellow-600 dark:text-yellow-400';
+                    return 'text-red-600 dark:text-red-400 animate-pulse font-bold';
+                },
+
+                getCurrentPlayerName() {
+                    if (!this.currentPlayerId) return 'Waiting...';
+                    const player = this.usersHere.find(u => u.id === this.currentPlayerId);
+                    return player ? player.name : 'Unknown';
+                },
+
                 isInvalidInput(word) {
-                    console.log('Validating word:', word);
-                    console.log('Last word is:', this.lastWord);
-                    console.log('Words used:', this.words_used);
+                    // console.log('Validating word:', word);
+                    // console.log('Last word is:', this.lastWord);
+                    // console.log('Words used:', this.words_used);
                     if (!word || word.trim() === '') return false;
 
                     // Check if the word is least 3 characters long
-                    if (word.trim().length < 3) {
+                    if (word.trim().length < 4) {
                         return true;
                     }
 
@@ -77,7 +148,7 @@
                 },
 
                 getInputErrorMessage(word) {
-                    console.log('Error Validating input:', word);
+                    // console.log('Error Validating input:', word);
                     if (!word || word.trim() === '') return '';
 
                     if (!/^[a-zA-Z]+$/.test(word)) {
@@ -103,15 +174,22 @@
 
                 validateAndSubmit() {
                     if (!this.isMyTurn()) return;
+                    if (this.timeRemaining <= 0) {
+                        this.$dispatch('notify', {
+                            type: 'error',
+                            message: 'Time ran out! Your turn has ended.'
+                        });
+                        return;
+                    }
 
                     const myInput = this.userInputs[{{ auth()->id() }}];
                     if (!myInput) return;
 
                     // Isolated validation for length
-                    if (myInput.trim().length < 3) {
+                    if (myInput.trim().length < 4) {
                         this.$dispatch('notify', {
                             type: 'error',
-                            message: 'Word must be at least 3 characters long'
+                            message: 'Word must be at least 4 characters long'
                         });
                         return;
                     }
@@ -177,13 +255,20 @@
                         })
                         .listen('GameRoomStartEvent', (event) => {
                             console.log('Game started', event);
+                            this.gameRoom[0] = event.gameRoom;
                             this.currentPlayerId = event.firstPlayer.id;
+                            this.turnDeadline = event.gameRoom.turn_deadline;
+                            this.startCountdown();
                             console.log('Game started, first player:', event.firstPlayer.name);
                         })
                         .listen('GameRoomTurnValidatedEvent', (event) => {
                             if (event.isValid) {
                                 // Update current player
                                 this.currentPlayerId = event.nextPlayer.id;
+
+                                // Update turn deadline and start countdown
+                                this.turnDeadline = event.gameRoom.turn_deadline;
+                                this.startCountdown();
 
                                 // Clear input of the player who just played
                                 this.userInputs[event.user.id] = '';
@@ -205,6 +290,24 @@
                                     message: `${event.user.name}: ${event.word} - ${event.message}`
                                 });
                             }
+                        })
+                        .listen('GameRoomTimeoutEvent', (event) => {
+                            console.log('Game timed out', event);
+                            // update gameRoom
+                            this.gameRoom[0] = event.gameRoom;
+                            this.timeRemaining = 0;
+                            clearInterval(this.countdownInterval);
+
+                            this.currentPlayerId = null;
+
+
+
+                            // Declare winner
+                            this.$dispatch('notify', {
+                                type: 'success',
+                                message: `${event.winner.name} wins the game!`
+                            });
+
                         });
 
                         if (this.gameRoom[0].word_moves && this.gameRoom[0].word_moves.length > 0) {
@@ -217,15 +320,12 @@
                             this.lastWord = usedWords[usedWords.length - 1];
 
                         }
-                    // Add beforeunload handler
-{{--                    const handleBeforeUnload = () => {--}}
-{{--                        axios.post(`/game-rooms/${this.gameRoom[0].id}/leave`, {--}}
-{{--                            user_id: {{ auth()->id() }}--}}
-{{--                        }).catch(error => console.error('Error leaving room:', error));--}}
-{{--                    };--}}
 
-{{--                    window.addEventListener('beforeunload', handleBeforeUnload);--}}
-
+                    // Start the countdown if game is already in progress
+                    if (this.gameRoom[0].in_progress && this.gameRoom[0].turn_deadline) {
+                        this.turnDeadline = this.gameRoom[0].turn_deadline;
+                        this.startCountdown();
+                    }
                 }
             }"
             >
@@ -242,15 +342,34 @@
                                       class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
                                     Waiting for Players
                                 </span>
-                                <span x-show="usersHere.length >= 2 && gameRoom[0].in_progress"
-                                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-800 dark:text-emerald-100">
-                                    Game in Progress
-                                </span>
                                 <span x-show="usersHere.length >= 2 && !gameRoom[0].in_progress"
                                       class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-800 dark:text-amber-100">
                                     Ready to Start
                                 </span>
+                                <span x-show="usersHere.length >= 2 && gameRoom[0].in_progress"
+                                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-800 dark:text-emerald-100">
+                                    Game in Progress
+                                </span>
                             </div>
+
+                            <!-- Current Player & Countdown Timer (new) -->
+                            <div class="mt-6 mb-4" x-show="gameRoom[0].in_progress">
+                                <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 text-center">
+                                    <h4 class="text-md font-medium text-gray-900 dark:text-gray-100 mb-2">
+                                        Current Turn
+                                    </h4>
+                                    <p class="font-bold text-lg text-indigo-600 dark:text-indigo-400" x-text="getCurrentPlayerName()"></p>
+
+                                    <div class="mt-3 flex justify-center items-center space-x-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span class="text-xl font-mono" x-text="timeRemaining" x-bind:class="getTimeRemainingColor()"></span>
+                                        <span class="text-sm text-gray-500 dark:text-gray-400">seconds</span>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="flex justify-between items-center">
                                 <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
                                     Players
@@ -303,8 +422,12 @@
                                     <template x-for="user in usersHere" :key="user.id">
                                         <div class="space-y-2">
                                             <div class="flex items-center space-x-3">
-                                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
-                                                      x-text="`${user.name}'s input:`">
+                                                <span class="text-sm font-medium"
+                                                      x-bind:class="{
+                                                        'text-emerald-600 dark:text-emerald-400 font-bold': user.id === currentPlayerId,
+                                                        'text-gray-700 dark:text-gray-300': user.id !== currentPlayerId
+                                                      }"
+                                                      x-text="`${user.name}'s input:${user.id === currentPlayerId ? ' (Current Turn)' : ''}`">
                                                 </span>
                                                 <span class="text-xs text-gray-500 dark:text-gray-400"
                                                       x-show="typingStates[user.id]"
