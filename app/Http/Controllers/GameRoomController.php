@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\DisconnectEvent;
 use App\Events\GameRoomClosedEvent;
 use App\Events\GameRoomStartEvent;
+use App\Events\GameRoomTimeoutEvent;
 use App\Events\GameRoomTurnValidatedEvent;
 use App\Models\DictionaryWord;
 use App\Models\GameRoom;
@@ -179,6 +180,7 @@ class GameRoomController extends Controller
         $gameRoom->update([
             'in_progress' => true,
             'current_player_id' => $firstPlayer->id,
+            'turn_deadline' => now()->addSeconds(15)->toIso8601String(),
         ]);
 
         // Broadcast the game started event
@@ -200,6 +202,16 @@ class GameRoomController extends Controller
         $request->validate([
             'word' => 'required|string|alpha',
         ]);
+
+        // Validate if submitted on time
+        if ($gameRoom->turn_deadline < now()) {
+            $winner = $gameRoom->users()->where('id', '!=', $gameRoom->current_player_id);
+            // Possibly trigger the timeout event
+            event(new GameRoomTimeOutEvent($gameRoom, $winner));
+            return response()->json([
+                'message' => 'Time is up!',
+            ], 400);
+        }
 
         $word = strtolower($request->word);
         // Grab all the words that have been played
@@ -240,11 +252,10 @@ class GameRoomController extends Controller
 
             // Next Player
             $nextPlayer = $gameRoom->users()->where('id', '!=', $request->user()->id)->first();
-            $turnDeadline = now()->addSeconds(15);
 
             $gameRoom->update([
                 'current_player_id' => $nextPlayer->id,
-                'turn_deadline' => $turnDeadline,
+                'turn_deadline' => now()->addSeconds(15)->toIso8601String(),
             ]);
         }
 
