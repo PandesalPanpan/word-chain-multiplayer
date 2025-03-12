@@ -25,6 +25,11 @@ class GameRoom extends Model
         return $this->belongsTo(User::class, 'host_id');
     }
 
+    public function currentPlayer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'current_player_id');
+    }
+
     public function users(): HasMany
     {
         return $this->hasMany(User::class, 'game_room_id');
