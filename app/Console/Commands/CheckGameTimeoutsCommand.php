@@ -22,7 +22,7 @@ class CheckGameTimeoutsCommand extends Command
         $expiredGames = GameRoom::where('in_progress', true)
             ->whereNotNull('turn_deadline')
             ->whereNotNull('current_player_id')
-            ->where('turn_deadline', '<', now())
+            ->where('turn_deadline', '<', now()->toIso8601String())
             ->get();
 
         $this->info("Found {$expiredGames->count()} games with expired timers");
