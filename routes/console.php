@@ -42,3 +42,8 @@ Artisan::command('inspire', function () {
         // 4. Game room is active and in progress -> Do Nothing
     }
 })->everyMinute();
+
+// Check for games with expired turn timers
+\Illuminate\Support\Facades\Schedule::command('game:check-timeouts')
+    ->everyFiveSeconds() // TODO: Double check if this interval is enough
+    ->withoutOverlapping();
