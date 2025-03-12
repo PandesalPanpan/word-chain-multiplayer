@@ -191,6 +191,13 @@ class GameRoomController extends Controller
 
     public function submitWord(Request $request, GameRoom $gameRoom)
     {
+        // Validate if the game room is in progress
+        if (! $gameRoom->in_progress) {
+            return response()->json([
+                'message' => 'Game is not in progress.',
+            ], 400);
+        }
+
         // Validate the users turn
         if ($gameRoom->current_player_id !== $request->user()->id) {
             return response()->json([
@@ -208,6 +215,7 @@ class GameRoomController extends Controller
             $winner = $gameRoom->users()->where('id', '!=', $gameRoom->current_player_id);
             // Possibly trigger the timeout event
             event(new GameRoomTimeOutEvent($gameRoom, $winner));
+
             return response()->json([
                 'message' => 'Time is up!',
             ], 400);
