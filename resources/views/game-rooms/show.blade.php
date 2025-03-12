@@ -256,6 +256,8 @@
                         .listen('GameRoomStartEvent', (event) => {
                             console.log('Game started', event);
                             this.gameRoom[0] = event.gameRoom;
+                            this.words_used = [];
+                            this.lastWord = '';
                             this.currentPlayerId = event.firstPlayer.id;
                             this.turnDeadline = event.gameRoom.turn_deadline;
                             this.startCountdown();
